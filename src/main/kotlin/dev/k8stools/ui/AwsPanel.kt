@@ -20,7 +20,11 @@ import dev.k8stools.Tool
 import dev.k8stools.io
 import dev.k8stools.ui
 import java.awt.BorderLayout
+import java.awt.Dimension
 import java.awt.FlowLayout
+import java.awt.Rectangle
+import javax.swing.JViewport
+import javax.swing.Scrollable
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JButton
 import javax.swing.JComboBox
@@ -44,6 +48,15 @@ private val PRESETS = listOf(
     Preset("List S3 buckets", listOf("s3", "ls")),
     Preset("SSO login (selected profile)", listOf("sso", "login")),
 )
+
+/** Fills the scroll pane's viewport when it is taller than needed; scrolls vertically only when it is not. */
+private class FillingPanel : JPanel(BorderLayout()), Scrollable {
+    override fun getPreferredScrollableViewportSize(): Dimension = preferredSize
+    override fun getScrollableUnitIncrement(r: Rectangle, orientation: Int, direction: Int) = 16
+    override fun getScrollableBlockIncrement(r: Rectangle, orientation: Int, direction: Int) = 64
+    override fun getScrollableTracksViewportWidth() = true
+    override fun getScrollableTracksViewportHeight() = (parent as? JViewport)?.let { it.height >= preferredSize.height } ?: true
+}
 
 class AwsPanel(private val project: Project, private val hub: K8sHub) : JPanel(BorderLayout()) {
     private val defaultProfile = "(default)"
@@ -80,8 +93,8 @@ class AwsPanel(private val project: Project, private val hub: K8sHub) : JPanel(B
             .panel.apply { border = JBUI.Borders.empty(6, 8) }
 
         val tablePanel = JPanel(BorderLayout()).apply {
-            // The table stays visible however short the tool window is, and grows when there is room.
-            add(JBScrollPane(table).apply { preferredSize = JBUI.size(400, 150); minimumSize = JBUI.size(100, 100) }, BorderLayout.CENTER)
+            // Small minimum, no fixed size: the table takes all the room the tool window has to give.
+            add(JBScrollPane(table).apply { preferredSize = JBUI.size(400, 120); minimumSize = JBUI.size(100, 80) }, BorderLayout.CENTER)
         }
 
         val runPreset = JButton("Run").apply { addActionListener { runPreset() } }
@@ -92,8 +105,9 @@ class AwsPanel(private val project: Project, private val hub: K8sHub) : JPanel(B
             .addLabeledComponent("Custom command:", JPanel(BorderLayout(8, 0)).apply { add(custom, BorderLayout.CENTER); add(runCustom, BorderLayout.EAST) })
             .panel.apply { border = JBUI.Borders.empty(6, 8) }
 
-        // Header / table / commands stacked; the whole tab scrolls when the tool window is short.
-        val content = JPanel(BorderLayout()).apply {
+        // Header / table / commands stacked. The table stretches to fill the tool window; the tab only
+        // scrolls when the window is shorter than the minimum the three parts need.
+        val content = FillingPanel().apply {
             add(header, BorderLayout.NORTH)
             add(tablePanel, BorderLayout.CENTER)
             add(commands, BorderLayout.SOUTH)
@@ -161,7 +175,6 @@ class AwsPanel(private val project: Project, private val hub: K8sHub) : JPanel(B
                     clusters = scan.clusters
                     model.rowCount = 0
                     clusters.forEach { model.addRow(arrayOf(it.name, it.region, it.status, it.version, if (it.arn in known) "yes" else "")) }
-                    hub.log("Cluster table now has ${model.rowCount} row(s), ${table.height}px tall")
                     status.text = "${clusters.size} cluster(s) in ${regions.size} region(s)" +
                             (if (scan.errors.isNotEmpty()) " - ${scan.errors.size} region(s) failed, e.g. ${scan.errors.first()}" else "") +
                             if (clusters.isNotEmpty()) ". Select rows and add them to your kubeconfig." else ""
