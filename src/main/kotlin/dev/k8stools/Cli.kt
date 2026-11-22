@@ -114,6 +114,8 @@ object Cli {
             val handler = OSProcessHandler(cmd)
             handler.addProcessListener(object : ProcessAdapter() {
                 override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                    // SYSTEM text is the handler echoing the command line; the caller already logs it.
+                    if (outputType == ProcessOutputTypes.SYSTEM) return
                     onText(event.text, outputType == ProcessOutputTypes.STDERR)
                 }
             })
