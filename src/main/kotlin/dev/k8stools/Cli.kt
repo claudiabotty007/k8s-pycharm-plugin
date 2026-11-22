@@ -4,6 +4,11 @@ import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import com.intellij.execution.process.CapturingProcessHandler
+import com.intellij.execution.process.OSProcessHandler
+import com.intellij.execution.process.ProcessAdapter
+import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessOutputTypes
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
@@ -87,6 +92,40 @@ object Cli {
                 -1, "",
                 "Cannot run '${tool.exe}': ${e.message}. Install it or set its path in Settings | Tools | Kubernetes Tools."
             )
+        }
+    }
+
+    /**
+     * Like [run], but hands output to [onText] as it is produced (for long commands such as terraform apply).
+     * The returned result carries only the exit code; output has already been delivered through [onText].
+     */
+    fun runStreaming(
+        tool: Tool,
+        args: List<String>,
+        workDir: String? = null,
+        env: Map<String, String> = emptyMap(),
+        timeoutMs: Int = 3_600_000,
+        onText: (text: String, isError: Boolean) -> Unit,
+    ): CliResult {
+        val cmd = GeneralCommandLine(listOf(resolve(tool)) + args).withCharset(StandardCharsets.UTF_8)
+        if (workDir != null) cmd.withWorkDirectory(workDir)
+        if (env.isNotEmpty()) cmd.withEnvironment(env)
+        return try {
+            val handler = OSProcessHandler(cmd)
+            handler.addProcessListener(object : ProcessAdapter() {
+                override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                    onText(event.text, outputType == ProcessOutputTypes.STDERR)
+                }
+            })
+            handler.startNotify()
+            if (!handler.waitFor(timeoutMs.toLong())) {
+                handler.destroyProcess()
+                CliResult(-1, "", "${tool.exe} timed out after ${timeoutMs / 60_000} min and was stopped")
+            } else {
+                CliResult(handler.exitCode ?: -1, "", "")
+            }
+        } catch (e: ExecutionException) {
+            CliResult(-1, "", "Cannot run '${tool.exe}': ${e.message}. Install it or set its path in Settings | Tools | Kubernetes Tools.")
         }
     }
 }

@@ -18,7 +18,15 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindowManager
 import java.util.concurrent.CopyOnWriteArrayList
 
-data class Step(val tool: Tool, val args: List<String>, val workDir: String? = null, val env: Map<String, String> = emptyMap())
+data class Step(
+    val tool: Tool,
+    val args: List<String>,
+    val workDir: String? = null,
+    val env: Map<String, String> = emptyMap(),
+    /** Stream output to the console while the command runs (long jobs such as terraform apply). */
+    val stream: Boolean = false,
+    val timeoutMs: Int = 300_000,
+)
 
 /** Per-project coordinator: shared console, background execution, change events, confirmation prompts. */
 @Service(Service.Level.PROJECT)
@@ -64,7 +72,13 @@ class K8sHub(private val project: Project) : Disposable {
     fun execSteps(steps: List<Step>): Boolean {
         for (s in steps) {
             log("$ ${display(s)}", ConsoleViewContentType.SYSTEM_OUTPUT)
-            val r = Cli.run(s.tool, s.args, s.workDir, s.env, timeoutMs = 300_000)
+            val r = if (s.stream) {
+                Cli.runStreaming(s.tool, s.args, s.workDir, s.env, s.timeoutMs) { text, isError ->
+                    console.print(text, if (isError) ConsoleViewContentType.ERROR_OUTPUT else ConsoleViewContentType.NORMAL_OUTPUT)
+                }
+            } else {
+                Cli.run(s.tool, s.args, s.workDir, s.env, timeoutMs = s.timeoutMs)
+            }
             if (r.stdout.isNotBlank()) log(r.stdout.trimEnd())
             if (r.stderr.isNotBlank()) log(r.stderr.trimEnd(), if (r.ok) ConsoleViewContentType.NORMAL_OUTPUT else ConsoleViewContentType.ERROR_OUTPUT)
             if (!r.ok) return false

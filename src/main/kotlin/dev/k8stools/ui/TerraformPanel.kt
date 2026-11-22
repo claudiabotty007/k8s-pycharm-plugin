@@ -2,6 +2,7 @@ package dev.k8stools.ui
 
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
@@ -14,12 +15,15 @@ import dev.k8stools.K8sException
 import dev.k8stools.K8sHub
 import dev.k8stools.Kube
 import dev.k8stools.NewContext
+import dev.k8stools.Step
 import dev.k8stools.TerraformSupport
+import dev.k8stools.Tool
 import dev.k8stools.TfOutput
 import dev.k8stools.io
 import dev.k8stools.ui
 import java.awt.BorderLayout
 import java.awt.FlowLayout
+import java.io.File
 import javax.swing.JButton
 import javax.swing.JPanel
 import javax.swing.ListSelectionModel
@@ -69,7 +73,16 @@ class TerraformPanel(private val project: Project, private val hub: K8sHub) : JP
             })
             .panel.apply { border = JBUI.Borders.empty(6, 8) }
 
-        add(top, BorderLayout.NORTH)
+        val commandsRow = JPanel(FlowLayout(FlowLayout.LEFT, 6, 0)).apply {
+            border = JBUI.Borders.empty(0, 8, 6, 8)
+            add(JBLabel("Common commands:"))
+            add(JButton("Init").apply { toolTipText = "terraform init"; addActionListener { runTf("init", listOf("init", "-input=false", "-no-color"), minutes = 20) } })
+            add(JButton("Plan").apply { toolTipText = "terraform plan (read-only preview)"; addActionListener { runTf("plan", listOf("plan", "-input=false", "-no-color"), minutes = 30) } })
+            add(JButton("Apply").apply { toolTipText = "terraform apply -auto-approve (asks first)"; addActionListener { applyTf() } })
+            add(JButton("Output").apply { toolTipText = "terraform output"; addActionListener { runTf("output", listOf("output", "-no-color"), minutes = 2) } })
+            add(JButton("Destroy").apply { toolTipText = "terraform destroy -auto-approve (asks first)"; addActionListener { destroyTf() } })
+        }
+        add(JPanel(BorderLayout()).apply { add(top, BorderLayout.NORTH); add(commandsRow, BorderLayout.CENTER) }, BorderLayout.NORTH)
         add(JBScrollPane(table), BorderLayout.CENTER)
         add(form, BorderLayout.SOUTH)
     }
@@ -122,5 +135,51 @@ class TerraformPanel(private val project: Project, private val hub: K8sHub) : JP
             hub.notify("Context \"$name\" created from Terraform output")
             hub.fireChanged()
         }
+    }
+
+    // ---------- common terraform commands (output streams live into the console) ----------
+
+    private fun workDir(): String? {
+        val d = dir.text.trim()
+        if (!File(d).isDirectory) {
+            status.text = "Not a directory: $d"
+            return null
+        }
+        return d
+    }
+
+    private fun runTf(title: String, args: List<String>, minutes: Int, refreshOutputsAfter: Boolean = false) {
+        val d = workDir() ?: return
+        hub.showToolWindow()
+        hub.task("terraform $title") {
+            val ok = hub.execSteps(
+                listOf(Step(Tool.TERRAFORM, args, workDir = d, env = mapOf("TF_IN_AUTOMATION" to "1"), stream = true, timeoutMs = minutes * 60_000))
+            )
+            hub.finish("terraform $title", ok)
+            if (ok && refreshOutputsAfter) ui { readOutputs() }
+        }
+    }
+
+    private fun applyTf() {
+        val d = workDir() ?: return
+        val go = Messages.showYesNoDialog(
+            project,
+            "Run terraform apply in:\n$d\n\nThis creates or changes REAL infrastructure and runs with -auto-approve " +
+                    "(no further prompt). Run Plan first if you are unsure.",
+            "Terraform Apply", "Apply", "Cancel", Messages.getWarningIcon()
+        ) == Messages.YES
+        if (go) runTf("apply", listOf("apply", "-auto-approve", "-input=false", "-no-color"), minutes = 120, refreshOutputsAfter = true)
+    }
+
+    private fun destroyTf() {
+        val d = workDir() ?: return
+        val typed = Messages.showInputDialog(
+            project,
+            "This will DESTROY every resource managed by the Terraform configuration in:\n$d\n\n" +
+                    "It runs with -auto-approve and cannot be undone. Type  destroy  to confirm:",
+            "Terraform Destroy", Messages.getWarningIcon()
+        )
+        if (typed?.trim() == "destroy") runTf("destroy", listOf("destroy", "-auto-approve", "-input=false", "-no-color"), minutes = 120, refreshOutputsAfter = true)
+        else if (typed != null) status.text = "Destroy cancelled (confirmation text did not match)."
     }
 }
