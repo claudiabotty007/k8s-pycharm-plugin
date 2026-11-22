@@ -38,12 +38,13 @@ kotlin {
     jvmToolchain(21)
 }
 
-// Every buildPlugin also copies the zip into dist/ (committed and pushed to main, see CLAUDE.md).
-val copyZipToDist by tasks.registering(Copy::class) {
-    from(tasks.buildPlugin.flatMap { it.archiveFile })
+// Every buildPlugin also copies the plugin jar (the same jar that is inside the zip) into dist/
+// (committed and pushed to main, see CLAUDE.md).
+val copyJarToDist by tasks.registering(Copy::class) {
+    from(tasks.named("composedJar"))
     into(layout.projectDirectory.dir("dist"))
 }
-tasks.buildPlugin { finalizedBy(copyZipToDist) }
+tasks.buildPlugin { finalizedBy(copyJarToDist) }
 
 // ./gradlew runIde -PopenProject=<path> opens that project in the sandbox IDE.
 tasks.runIde {

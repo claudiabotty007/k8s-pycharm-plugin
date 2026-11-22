@@ -13,9 +13,10 @@ Bump the version in the same change that adds the feature/improvement, and rebui
 
 ## Publishing the zip
 
-Every time the plugin zip is built (`./gradlew buildPlugin`), it is also copied to `dist/` by the build.
-Then **commit `dist/<zip>` and push to `main`** in the same go (owner's standing instruction). Releases additionally
-get a `v<version>` tag whose tree contains `dist/<zip>` plus the zip attached as a GitHub release asset.
+Every time the plugin is built (`./gradlew buildPlugin`), the plugin **jar** (not the zip) is also copied to `dist/`
+by the build. Then **commit `dist/<jar>` and push to `main`** in the same go (owner's standing instruction; the zip is
+not kept on main). The jar is self-contained and installable via Install Plugin from Disk. Releases additionally get a
+`v<version>` tag plus the zip attached as a GitHub release asset.
 
 ## Build / run
 
