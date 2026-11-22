@@ -1,0 +1,36 @@
+<idea-plugin>
+    <id>dev.k8stools.pycharm</id>
+    <name>Kubernetes Tools</name>
+    <vendor>K8s Tools</vendor>
+    <version>0.1.0</version>
+
+    <description><![CDATA[
+        Work with Kubernetes clusters from inside PyCharm using <code>kubectl</code>, <code>helm</code> and <code>terraform</code>.
+        <ul>
+            <li>Add, import, switch and remove kubeconfig contexts</li>
+            <li>Deploy YAML manifests to the current context (editor / project view context menu, or the tool window)</li>
+            <li>Create a context from a Terraform <code>output</code> (cluster endpoint, CA, name)</li>
+            <li>Search Artifact Hub and install Helm charts into the current context</li>
+        </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Kubernetes Tools" anchor="right" icon="/icons/k8s.svg"
+                    factoryClass="dev.k8stools.ui.K8sToolWindowFactory"/>
+        <notificationGroup id="K8s Tools" displayType="BALLOON"/>
+        <applicationConfigurable parentId="tools" instance="dev.k8stools.K8sConfigurable"
+                                 id="dev.k8stools.settings" displayName="Kubernetes Tools"/>
+    </extensions>
+
+    <actions>
+        <action id="K8sTools.ApplyYaml" class="dev.k8stools.ApplyYamlAction"
+                text="Deploy YAML to Current Kubernetes Context"
+                description="Runs kubectl apply -f on the selected YAML file(s) against the current context"
+                icon="/icons/k8s.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
