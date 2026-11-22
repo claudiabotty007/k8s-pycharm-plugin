@@ -2,7 +2,6 @@
     <id>dev.k8stools.pycharm</id>
     <name>Kubernetes Tools</name>
     <vendor>K8s Tools</vendor>
-    <version>0.1.0</version>
 
     <description><![CDATA[
         Work with Kubernetes clusters from inside PyCharm using <code>kubectl</code>, <code>helm</code> and <code>terraform</code>.
