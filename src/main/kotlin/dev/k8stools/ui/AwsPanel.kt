@@ -65,19 +65,23 @@ class AwsPanel(private val project: Project, private val hub: K8sHub) : JPanel(B
 
         val identityBtn = JButton("Who am I").apply { addActionListener { whoAmI() } }
         val findBtn = JButton("Find EKS clusters").apply { addActionListener { findClusters() } }
+        val addBtn = JButton("Add Selected to Kubeconfig").apply { addActionListener { addSelected() } }
+        profile.prototypeDisplayValue = "a-long-profile-name"
+        region.prototypeDisplayValue = "ap-southeast-2xx"
+        // Everything the user needs after a scan (find / add) is in the top rows, so it never scrolls out of view.
+        val selectors = JPanel(FlowLayout(FlowLayout.LEFT, 6, 0)).apply {
+            add(JBLabel("Profile:")); add(profile); add(JBLabel("Region:")); add(region); add(allRegions)
+        }
+        val actions = JPanel(FlowLayout(FlowLayout.LEFT, 6, 0)).apply { add(identityBtn); add(findBtn); add(addBtn) }
         val header = FormBuilder.createFormBuilder()
-            .addLabeledComponent("Profile:", profile)
-            .addLabeledComponent("Region:", region)
-            .addComponent(allRegions)
-            .addComponent(JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply { add(identityBtn); add(findBtn) })
+            .addComponent(selectors)
+            .addComponent(actions)
             .addComponent(status)
             .panel.apply { border = JBUI.Borders.empty(6, 8) }
 
-        val addBtn = JButton("Add Selected to Kubeconfig").apply { addActionListener { addSelected() } }
         val tablePanel = JPanel(BorderLayout()).apply {
-            // Fixed preferred height: the table must stay visible however short the tool window is.
-            add(JBScrollPane(table).apply { preferredSize = JBUI.size(400, 180); minimumSize = JBUI.size(100, 120) }, BorderLayout.CENTER)
-            add(JPanel(FlowLayout(FlowLayout.LEFT, 8, 4)).apply { add(addBtn) }, BorderLayout.SOUTH)
+            // The table stays visible however short the tool window is, and grows when there is room.
+            add(JBScrollPane(table).apply { preferredSize = JBUI.size(400, 150); minimumSize = JBUI.size(100, 100) }, BorderLayout.CENTER)
         }
 
         val runPreset = JButton("Run").apply { addActionListener { runPreset() } }
