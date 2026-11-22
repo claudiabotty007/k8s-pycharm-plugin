@@ -11,6 +11,12 @@ The single source of truth is `version` in `build.gradle.kts` (it is patched int
 Bump the version in the same change that adds the feature/improvement, and rebuild the zip
 (`./gradlew buildPlugin` -> `build/distributions/k8s-pycharm-plugin-<version>.zip`).
 
+## Publishing the zip
+
+Every time the plugin zip is built (`./gradlew buildPlugin`), it is also copied to `dist/` by the build.
+Then **commit `dist/<zip>` and push to `main`** in the same go (owner's standing instruction). Releases additionally
+get a `v<version>` tag whose tree contains `dist/<zip>` plus the zip attached as a GitHub release asset.
+
 ## Build / run
 
 - Needs JDK 21: use the JBR bundled with PyCharm (`<PyCharm>/jbr`) as `JAVA_HOME`.

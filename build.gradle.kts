@@ -38,6 +38,13 @@ kotlin {
     jvmToolchain(21)
 }
 
+// Every buildPlugin also copies the zip into dist/ (committed and pushed to main, see CLAUDE.md).
+val copyZipToDist by tasks.registering(Copy::class) {
+    from(tasks.buildPlugin.flatMap { it.archiveFile })
+    into(layout.projectDirectory.dir("dist"))
+}
+tasks.buildPlugin { finalizedBy(copyZipToDist) }
+
 // ./gradlew runIde -PopenProject=<path> opens that project in the sandbox IDE.
 tasks.runIde {
     providers.gradleProperty("openProject").orNull?.let { args(it) }
