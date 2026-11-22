@@ -2,7 +2,6 @@ package dev.k8stools.ui
 
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
-import com.intellij.ui.JBSplitter
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
@@ -76,7 +75,8 @@ class AwsPanel(private val project: Project, private val hub: K8sHub) : JPanel(B
 
         val addBtn = JButton("Add Selected to Kubeconfig").apply { addActionListener { addSelected() } }
         val tablePanel = JPanel(BorderLayout()).apply {
-            add(JBScrollPane(table), BorderLayout.CENTER)
+            // Fixed preferred height: the table must stay visible however short the tool window is.
+            add(JBScrollPane(table).apply { preferredSize = JBUI.size(400, 180); minimumSize = JBUI.size(100, 120) }, BorderLayout.CENTER)
             add(JPanel(FlowLayout(FlowLayout.LEFT, 8, 4)).apply { add(addBtn) }, BorderLayout.SOUTH)
         }
 
@@ -88,12 +88,13 @@ class AwsPanel(private val project: Project, private val hub: K8sHub) : JPanel(B
             .addLabeledComponent("Custom command:", JPanel(BorderLayout(8, 0)).apply { add(custom, BorderLayout.CENTER); add(runCustom, BorderLayout.EAST) })
             .panel.apply { border = JBUI.Borders.empty(6, 8) }
 
-        val split = JBSplitter(true, 0.62f).apply {
-            firstComponent = tablePanel
-            secondComponent = commands
+        // Header / table / commands stacked; the whole tab scrolls when the tool window is short.
+        val content = JPanel(BorderLayout()).apply {
+            add(header, BorderLayout.NORTH)
+            add(tablePanel, BorderLayout.CENTER)
+            add(commands, BorderLayout.SOUTH)
         }
-        add(header, BorderLayout.NORTH)
-        add(split, BorderLayout.CENTER)
+        add(JBScrollPane(content).apply { border = JBUI.Borders.empty() }, BorderLayout.CENTER)
 
         profile.addActionListener { loadDefaultRegion() }
         loadProfiles()
@@ -156,6 +157,7 @@ class AwsPanel(private val project: Project, private val hub: K8sHub) : JPanel(B
                     clusters = scan.clusters
                     model.rowCount = 0
                     clusters.forEach { model.addRow(arrayOf(it.name, it.region, it.status, it.version, if (it.arn in known) "yes" else "")) }
+                    hub.log("Cluster table now has ${model.rowCount} row(s), ${table.height}px tall")
                     status.text = "${clusters.size} cluster(s) in ${regions.size} region(s)" +
                             (if (scan.errors.isNotEmpty()) " - ${scan.errors.size} region(s) failed, e.g. ${scan.errors.first()}" else "") +
                             if (clusters.isNotEmpty()) ". Select rows and add them to your kubeconfig." else ""
