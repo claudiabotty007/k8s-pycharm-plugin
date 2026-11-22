@@ -25,7 +25,7 @@ fun CliResult.orThrow(): CliResult {
     return this
 }
 
-enum class Tool(val exe: String) { KUBECTL("kubectl"), HELM("helm"), TERRAFORM("terraform") }
+enum class Tool(val exe: String) { KUBECTL("kubectl"), HELM("helm"), TERRAFORM("terraform"), AWS("aws") }
 
 @Service(Service.Level.APP)
 @State(name = "K8sToolsSettings", storages = [Storage("k8sTools.xml")])
@@ -34,6 +34,7 @@ class K8sSettings : PersistentStateComponent<K8sSettings.State> {
         var kubectlPath: String = ""
         var helmPath: String = ""
         var terraformPath: String = ""
+        var awsPath: String = ""
     }
 
     private var state = State()
@@ -55,6 +56,7 @@ object Cli {
             Tool.KUBECTL -> st.kubectlPath
             Tool.HELM -> st.helmPath
             Tool.TERRAFORM -> st.terraformPath
+            Tool.AWS -> st.awsPath
         }.trim()
         if (configured.isNotEmpty()) return configured
         PathEnvironmentVariableUtil.findInPath(tool.exe)?.let { return it.absolutePath }

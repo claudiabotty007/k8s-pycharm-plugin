@@ -18,7 +18,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindowManager
 import java.util.concurrent.CopyOnWriteArrayList
 
-data class Step(val tool: Tool, val args: List<String>, val workDir: String? = null)
+data class Step(val tool: Tool, val args: List<String>, val workDir: String? = null, val env: Map<String, String> = emptyMap())
 
 /** Per-project coordinator: shared console, background execution, change events, confirmation prompts. */
 @Service(Service.Level.PROJECT)
@@ -64,7 +64,7 @@ class K8sHub(private val project: Project) : Disposable {
     fun execSteps(steps: List<Step>): Boolean {
         for (s in steps) {
             log("$ ${display(s)}", ConsoleViewContentType.SYSTEM_OUTPUT)
-            val r = Cli.run(s.tool, s.args, s.workDir, timeoutMs = 300_000)
+            val r = Cli.run(s.tool, s.args, s.workDir, s.env, timeoutMs = 300_000)
             if (r.stdout.isNotBlank()) log(r.stdout.trimEnd())
             if (r.stderr.isNotBlank()) log(r.stderr.trimEnd(), if (r.ok) ConsoleViewContentType.NORMAL_OUTPUT else ConsoleViewContentType.ERROR_OUTPUT)
             if (!r.ok) return false
@@ -73,7 +73,7 @@ class K8sHub(private val project: Project) : Disposable {
     }
 
     private fun display(s: Step): String =
-        (listOf(s.tool.exe) + s.args.map { if (it.startsWith("--token=")) "--token=****" else if (it.contains(' ')) "\"$it\"" else it })
+        (s.env.filterKeys { it == "AWS_PROFILE" || it == "AWS_REGION" }.map { "${it.key}=${it.value}" } + listOf(s.tool.exe) +s.args.map { if (it.startsWith("--token=")) "--token=****" else if (it.contains(' ')) "\"$it\"" else it })
             .joinToString(" ")
 
     /** Asks the user to confirm acting on the current context. Call from a background thread. */
