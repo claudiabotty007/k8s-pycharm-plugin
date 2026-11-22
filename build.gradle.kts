@@ -19,7 +19,9 @@ dependencies {
         // Build against a locally installed IDE (see gradle.properties) to avoid a huge download.
         // To build against a downloaded PyCharm instead, replace with: pycharmCommunity("2025.2.6.1")
         local(providers.gradleProperty("ideDir"))
+        testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
     }
+    testImplementation("junit:junit:4.13.2")
 }
 
 intellijPlatform {
@@ -34,4 +36,9 @@ intellijPlatform {
 
 kotlin {
     jvmToolchain(21)
+}
+
+// ./gradlew runIde -PopenProject=<path> opens that project in the sandbox IDE.
+tasks.runIde {
+    providers.gradleProperty("openProject").orNull?.let { args(it) }
 }

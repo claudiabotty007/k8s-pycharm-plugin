@@ -77,7 +77,7 @@ class K8sHub(private val project: Project) : Disposable {
             .joinToString(" ")
 
     /** Asks the user to confirm acting on the current context. Call from a background thread. */
-    private fun confirmOnCurrentContext(action: String, details: String): Boolean {
+    fun confirmOnCurrentContext(action: String, details: String): Boolean {
         val ctx = Kube.currentContext()
         if (ctx.isBlank()) throw K8sException("No current Kubernetes context. Select one in the Contexts tab first.")
         var ok = false
@@ -112,6 +112,17 @@ class K8sHub(private val project: Project) : Disposable {
             ) return@task
             val ok = execSteps(listOf(Step(Tool.HELM, HelmHub.installArgs(chart, release, namespace, createNs, valuesFile, dryRun))))
             finish("helm install $release", ok)
+        }
+    }
+
+    /** Runs one kubectl command against the current context, optionally behind a confirmation prompt. */
+    fun kubectl(title: String, args: List<String>, confirm: String? = null, notifyResult: Boolean = false, afterOk: () -> Unit = {}) {
+        showToolWindow()
+        task(title) {
+            if (confirm != null && !confirmOnCurrentContext(confirm, "")) return@task
+            val ok = execSteps(listOf(Step(Tool.KUBECTL, args)))
+            if (notifyResult) finish(title, ok) else if (!ok) notify("$title failed (see console)", NotificationType.ERROR)
+            if (ok) afterOk()
         }
     }
 

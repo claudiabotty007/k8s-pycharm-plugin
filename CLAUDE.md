@@ -11,3 +11,9 @@ The single source of truth is `version` in `build.gradle.kts` (it is patched int
 Bump the version in the same change that adds the feature/improvement, and rebuild the zip
 (`./gradlew buildPlugin` -> `build/distributions/k8s-pycharm-plugin-<version>.zip`).
 
+## Build / run
+
+- Needs JDK 21: use the JBR bundled with PyCharm (`<PyCharm>/jbr`) as `JAVA_HOME`.
+- `gradle.properties` -> `ideDir` points at the local PyCharm used to compile against.
+- `./gradlew test` runs the parsing unit tests; `./gradlew runIde -PopenProject=<path>` starts a sandbox IDE.
+  Close the sandbox before `buildPlugin` (Windows locks the plugin jar).
