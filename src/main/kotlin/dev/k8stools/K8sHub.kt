@@ -124,7 +124,8 @@ class K8sHub(private val project: Project) : Disposable {
                     "Namespace: ${namespace.ifBlank { "default" }}"
                 )
             ) return@task
-            val ok = execSteps(listOf(Step(Tool.HELM, HelmHub.installArgs(chart, release, namespace, createNs, valuesFile, dryRun))))
+            val flag = if (dryRun) HelmVersion.detectDryRunFlag() else "--dry-run"
+            val ok = execSteps(listOf(Step(Tool.HELM, HelmHub.installArgs(chart, release, namespace, createNs, valuesFile, dryRun, flag))))
             finish("helm install $release", ok)
         }
     }
@@ -137,7 +138,8 @@ class K8sHub(private val project: Project) : Disposable {
                     "Namespace: ${namespace.ifBlank { "default" }}"
                 )
             ) return@task
-            val ok = execSteps(listOf(Step(Tool.HELM, LocalChart.installArgs(dir, release, namespace, createNs, valuesFile, dryRun), workDir = dir)))
+            val flag = if (dryRun) HelmVersion.detectDryRunFlag() else "--dry-run"
+            val ok = execSteps(listOf(Step(Tool.HELM, LocalChart.installArgs(dir, release, namespace, createNs, valuesFile, dryRun, flag), workDir = dir)))
             finish("helm install $release", ok)
         }
     }

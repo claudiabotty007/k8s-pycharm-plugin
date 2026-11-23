@@ -46,7 +46,7 @@ object HelmHub {
 
     fun installArgs(
         chart: HelmChart, release: String, namespace: String, createNamespace: Boolean,
-        valuesFile: String, dryRun: Boolean,
+        valuesFile: String, dryRun: Boolean, dryRunFlag: String = "--dry-run",
     ): List<String> {
         // --repo avoids touching the user's `helm repo` list.
         val args = mutableListOf(
@@ -56,7 +56,7 @@ object HelmHub {
         )
         if (createNamespace) args += "--create-namespace"
         if (valuesFile.isNotBlank()) args += listOf("-f", valuesFile)
-        if (dryRun) args += "--dry-run"
+        if (dryRun) args += dryRunFlag
         return args
     }
 }
