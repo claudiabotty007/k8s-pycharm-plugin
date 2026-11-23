@@ -13,6 +13,7 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.LightVirtualFile
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
@@ -117,7 +118,8 @@ class LocalChartPanel(private val project: Project, private val hub: K8sHub) : J
             .addComponent(install)
             .addComponentFillVertically(JPanel(), 0)
             .panel.apply { border = JBUI.Borders.empty(8) }
-        add(form, BorderLayout.CENTER)
+        // Scrollable, so the form can shrink and never squeezes the console out of a short tool window.
+        add(JBScrollPane(form).apply { border = JBUI.Borders.empty() }, BorderLayout.CENTER)
 
         dir.textField.document.addDocumentListener(object : DocumentListener {
             override fun insertUpdate(e: DocumentEvent) = updateInfo()
