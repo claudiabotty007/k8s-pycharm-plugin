@@ -41,7 +41,7 @@ class K8sToolWindowFactory : ToolWindowFactory, DumbAware {
             addTab("Explorer", ExplorerPanel(project, hub))
             addTab("Deploy YAML", DeployPanel(project, hub))
             addTab("Terraform", TerraformPanel(project, hub))
-            addTab("Helm", HelmPanel(project, hub))
+            addTab("Helm", HelmTab(project, hub))
             addTab("AWS", AwsPanel(project, hub))
         }
         val top = JPanel(BorderLayout()).apply {

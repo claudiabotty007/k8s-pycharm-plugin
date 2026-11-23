@@ -129,6 +129,19 @@ class K8sHub(private val project: Project) : Disposable {
         }
     }
 
+    fun helmInstallLocal(dir: String, release: String, namespace: String, createNs: Boolean, valuesFile: String, dryRun: Boolean) {
+        showToolWindow()
+        task("helm install $release (local chart)") {
+            if (!dryRun && !confirmOnCurrentContext(
+                    "Install the local chart in $dir as release \"$release\"?",
+                    "Namespace: ${namespace.ifBlank { "default" }}"
+                )
+            ) return@task
+            val ok = execSteps(listOf(Step(Tool.HELM, LocalChart.installArgs(dir, release, namespace, createNs, valuesFile, dryRun), workDir = dir)))
+            finish("helm install $release", ok)
+        }
+    }
+
     /** Runs one kubectl command against the current context, optionally behind a confirmation prompt. */
     fun kubectl(title: String, args: List<String>, confirm: String? = null, notifyResult: Boolean = false, afterOk: () -> Unit = {}) {
         showToolWindow()
