@@ -39,8 +39,8 @@ class K8sToolWindowFactory : ToolWindowFactory, DumbAware {
         val tabs = JBTabbedPane().apply {
             addTab("Contexts", ContextsPanel(project, hub))
             addTab("Explorer", ExplorerPanel(project, hub))
-            addTab("Deploy YAML", DeployPanel(project, hub))
-            addTab("Terraform", TerraformPanel(project, hub))
+            addTab("Deploy YAML", scrolled(DeployPanel(project, hub)))
+            addTab("Terraform", scrolled(TerraformPanel(project, hub)))
             addTab("Helm", HelmTab(project, hub))
             addTab("AWS", AwsPanel(project, hub))
         }

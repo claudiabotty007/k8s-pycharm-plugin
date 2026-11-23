@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "dev.k8stools"
-version = "2.3.1" // see CLAUDE.md for the versioning rules
+version = "2.3.2" // see CLAUDE.md for the versioning rules
 
 repositories {
     mavenCentral()

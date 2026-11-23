@@ -38,8 +38,8 @@ import javax.swing.event.DocumentListener
 class HelmTab(project: Project, hub: K8sHub) : JPanel(BorderLayout()) {
     init {
         val tabs = JBTabbedPane()
-        tabs.addTab("Artifact Hub", HelmPanel(project, hub))
-        tabs.addTab("Local chart", LocalChartPanel(project, hub))
+        tabs.addTab("Artifact Hub", scrolled(HelmPanel(project, hub)))
+        tabs.addTab("Local chart", LocalChartPanel(project, hub)) // already scrollable inside
         add(tabs, BorderLayout.CENTER)
     }
 }
